@@ -39,7 +39,7 @@ This is the backend for Content Clock, a social media content scheduling and pub
     PINTEREST_SECRET="your-pinterest-secret"
     MASTODON_CLIENT_KEY="your-mastodon-client-key"
     MASTODON_CLIENT_SECRET="your-mastodon-client-secret"
-    MASTODON_BASE_URL="httpsci.mastodon.social" # Replace with your Mastodon instance
+    MASTODON_BASE_URL="social.mastodon.social"
 
     # AI
     CHAT_GPT_KEY="your-chat-gpt-key"

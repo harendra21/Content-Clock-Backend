@@ -10,7 +10,6 @@ services:
       - API_HOST="http://localhost:8080"
       - REDIRECT_HOST="http://localhost:3000"
       - JWT_KEY=""
-      - DB_MIGRATE="true"
       - FACEBOOK_APP_ID=""
       - FACEBOOK_SECRET=""
       - TWITTER_KEY=""
