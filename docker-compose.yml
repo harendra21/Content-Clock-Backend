@@ -1,0 +1,28 @@
+version: "3.8"
+services:
+  pocketbase:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./pbData:/pb/pb_data
+    environment:
+      - API_HOST="http://localhost:8080"
+      - REDIRECT_HOST="http://localhost:3000"
+      - JWT_KEY=""
+      - DB_MIGRATE="true"
+      - FACEBOOK_APP_ID=""
+      - FACEBOOK_SECRET=""
+      - TWITTER_KEY=""
+      - TWITTER_SECRET=""
+      - LINKEDIN_APP_ID=""
+      - LINKEDIN_SECRET=""
+      - PINTEREST_APP_ID=""
+      - PINTEREST_SECRET=""
+      - MASTODON_CLIENT_KEY=""
+      - MASTODON_CLIENT_SECRET=""
+      - MASTODON_BASE_URL=""
+      - DISCORD_CLIENT_KEY=""
+      - DISCORD_CLIENT_SECRET=""
+      - DISCORD_BOT_TOKEN=""
+      - CHAT_GPT_KEY=""
