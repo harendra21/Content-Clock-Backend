@@ -26,7 +26,6 @@ This is the backend for Content Clock, a social media content scheduling and pub
     API_HOST="http://localhost:8080"
     REDIRECT_HOST="http://localhost:3000"
     JWT_KEY="your-jwt-key"
-    DB_MIGRATE="true"
 
     # Social Media
     FACEBOOK_APP_ID="your-facebook-app-id"
