@@ -42,8 +42,19 @@ func FetchPostsAnalytics(app *pocketbase.PocketBase) {
 			app.Logger().Error("Error in getting the connection", "error", err)
 		}
 
-		if connection.ConnectionName == "facebook" {
+		switch connection.ConnectionName {
+		case "facebook":
 			FetchFacebookAnalytics(app, post, connection)
+		case "linkedin":
+			FetchLinkedInPostAnalytics(app, post, connection)
+		case "instagram":
+			FetchInstagramPostAnalytics(app, post, connection)
+		case "mastodon":
+			FetchMastodonPostAnalytics(app, post, connection)
+		case "pinterest":
+			FetchPinterestPostAnalytics(app, post, connection)
+		default:
+			app.Logger().Warn("Unsupported connection type", "type", connection.ConnectionName)
 		}
 	}
 
