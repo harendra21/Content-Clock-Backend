@@ -70,10 +70,8 @@ func SaveUpdateAnalyticsData(app *pocketbase.PocketBase, postId string, data str
 	}
 	if err != nil && err.Error() == "sql: no rows in result set" {
 		_, err := app.DB().Insert("analytics", dbx.Params{
-			"post":    postId,
-			"data":    data,
-			"created": time.Now(),
-			"updated": time.Now(),
+			"post": postId,
+			"data": data,
 		}).Execute()
 
 		if err != nil {

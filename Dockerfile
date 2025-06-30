@@ -27,6 +27,7 @@ WORKDIR /pb
 
 # Copy the built binary from builder
 COPY --from=builder /app/pb .
+COPY .env .
 
 # Expose default PocketBase port
 EXPOSE 8080
