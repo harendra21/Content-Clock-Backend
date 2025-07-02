@@ -130,6 +130,39 @@ func PostToMastodon(app *pocketbase.PocketBase, postContent string, images []str
 
 }
 
+func PostToThreads(app *pocketbase.PocketBase, postContent string, images []string, connectionId string, accessToken string, socialPostId string) {
+
+	data := PostToSocialPayload{
+		Content:      postContent,
+		Images:       images,
+		ConnectionId: connectionId,
+		AccessToken:  accessToken,
+		SocialPostId: socialPostId,
+	}
+
+	app.Logger().Info("Postinh to threads", "data", data)
+
+	// StartQueue("discord", data)
+	HandlePostToThreads(app, data)
+
+}
+func PostToReddit(app *pocketbase.PocketBase, postContent string, images []string, connectionId string, accessToken string, socialPostId string) {
+
+	data := PostToSocialPayload{
+		Content:      postContent,
+		Images:       images,
+		ConnectionId: connectionId,
+		AccessToken:  accessToken,
+		SocialPostId: socialPostId,
+	}
+
+	app.Logger().Info("Postinh to reddit", "data", data)
+
+	// StartQueue("discord", data)
+	HandlePostToReddit(app, data)
+
+}
+
 func FailedPost(app *pocketbase.PocketBase, platform string, postId string, err error) {
 	record, _ := app.FindRecordById("posts", postId)
 	record.Set("status", "failed")

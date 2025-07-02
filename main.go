@@ -29,6 +29,8 @@ func main() {
 		controllers.SetupMastodonRoutes(se, app)
 		controllers.SetupPinterestRoutes(se, app)
 		controllers.SetupAiRoutes(se, app)
+		controllers.SetupRedditRoutes(se, app)
+		controllers.SetupThreadsRoutes(se, app)
 		return se.Next()
 	})
 

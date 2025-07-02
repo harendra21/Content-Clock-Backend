@@ -4,7 +4,6 @@ import (
 	"content-clock/helpers"
 	"content-clock/models"
 	"fmt"
-	"time"
 
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase"
@@ -39,8 +38,6 @@ func AddNewConnection(app *pocketbase.PocketBase, connection *models.Connections
 		"meta_data":       connection.MetaData,
 		"timezone":        connection.Timezone,
 		"user":            connection.UserId,
-		"created":         time.Now(),
-		"updated":         time.Now(),
 	}).Execute()
 
 	if err != nil {
@@ -58,6 +55,10 @@ func AddNewConnection(app *pocketbase.PocketBase, connection *models.Connections
 	}
 	id, _ := result.LastInsertId()
 	app.Logger().Info("Connection added successfully with ID", "Id", id)
+
+	if connection.ProfileImage == "" {
+		return nil
+	}
 
 	image := ""
 

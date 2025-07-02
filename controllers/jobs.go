@@ -118,6 +118,12 @@ func GetScheduledPosts(app *pocketbase.PocketBase) {
 				case "mastodon":
 					// Post to mastadon
 					tasks.PostToMastodon(app, content, images, connectionId, accessToken, postId)
+				case "threads":
+					// Post to mastadon
+					tasks.PostToThreads(app, content, images, connectionId, accessToken, postId)
+				case "reddit":
+					// Post to mastadon
+					tasks.PostToReddit(app, content, images, connectionId, accessToken, postId)
 				}
 
 			}
