@@ -22,7 +22,7 @@ func HandlePostToThreads(app *pocketbase.PocketBase, p PostToSocialPayload) erro
 	accessToken := p.AccessToken
 	socialPostId := p.SocialPostId
 	backendHost := os.Getenv("API_HOST")
-	backendHost = "https://content-clock.loca.lt"
+	// backendHost = "https://content-clock.loca.lt"
 
 	app.Logger().Info("Posting to threads", "connectionId", connectionId, "content", content, "images", images)
 

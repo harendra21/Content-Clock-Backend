@@ -29,7 +29,7 @@ func SetupThreadsRoutes(se *core.ServeEvent, app *pocketbase.PocketBase) {
 }
 
 func BeginThreadsAuth(e *core.RequestEvent, app *pocketbase.PocketBase) {
-	// var apiHost string = os.Getenv("API_HOST")
+	var apiHost string = os.Getenv("API_HOST")
 	var threadsAppId string = os.Getenv("THREADS_APP_ID")
 	var threadsAppSecret string = os.Getenv("THREADS_SECRET_KEY")
 	if threadsAppId == "" || threadsAppSecret == "" {
@@ -37,7 +37,7 @@ func BeginThreadsAuth(e *core.RequestEvent, app *pocketbase.PocketBase) {
 		return
 	}
 
-	callbackUrl := "https://localhost:8080/api/v1/auth/threads/callback"
+	callbackUrl := apiHost + "/api/v1/auth/threads/callback"
 	scopes := "threads_basic,threads_content_publish,threads_manage_insights"
 
 	redirectUrl := fmt.Sprintf("https://threads.net/oauth/authorize?client_id=%s&redirect_uri=%s&response_type=code&scope=%s", threadsAppId, callbackUrl, scopes)
@@ -54,13 +54,13 @@ type LongLivedTokenResponse struct {
 }
 
 func ThreadsOAuthCallback(e *core.RequestEvent, app *pocketbase.PocketBase) {
-
+	var apiHost string = os.Getenv("API_HOST")
 	code := e.Request.URL.Query().Get("code")
 	var url string = "https://graph.threads.net/oauth/access_token"
 	var method string = "POST"
 	var threadsAppId string = os.Getenv("THREADS_APP_ID")
 	var threadsAppSecret string = os.Getenv("THREADS_SECRET_KEY")
-	var callbackUrl string = "https://localhost:8080/api/v1/auth/threads/callback"
+	var callbackUrl string = apiHost + "/api/v1/auth/threads/callback"
 	var body map[string]interface{} = map[string]interface{}{
 		"client_id":     threadsAppId,
 		"client_secret": threadsAppSecret,
