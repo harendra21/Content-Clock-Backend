@@ -37,7 +37,7 @@ pipeline {
         stage('Run New Container') {
             steps {
                 script {
-                    sh "docker run -d --name $CONTAINER_NAME -p 8080:8080 -v ./pbData:/pb/pb_data $IMAGE_NAME"
+                    sh "docker run -d --name $CONTAINER_NAME -p 8080:8080 -v $PWD/pbData:/pb/pb_data $IMAGE_NAME"
                 }
             }
         }
