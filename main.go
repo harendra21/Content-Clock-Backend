@@ -4,6 +4,7 @@ import (
 	"content-clock/controllers"
 	"content-clock/helpers"
 	"log"
+	"net/http"
 
 	"github.com/joho/godotenv"
 	"github.com/pocketbase/pocketbase"
@@ -22,6 +23,10 @@ func main() {
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
 		// serves static files from the provided public dir (if exists)
 		// se.Router.GET("/{path...}", apis.Static(os.DirFS("./pb_public"), false))
+		se.Router.GET("/", func(e *core.RequestEvent) error {
+			e.Redirect(http.StatusPermanentRedirect, "https://content-clock.vercel.app")
+			return nil
+		})
 		controllers.SetupInstagramRoutes(se, app)
 		controllers.SetupFacebookRoutes(se, app)
 		controllers.SetupLinkedinRoutes(se, app)
