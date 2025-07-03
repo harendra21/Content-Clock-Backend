@@ -67,3 +67,5 @@ You can also run the application using Docker.
     ```bash
     docker run -p 8080:8080 --env-file .env content-clock-backend
     ```
+
+## Build with jenkins
