@@ -90,7 +90,7 @@ func MakeHTTPRequest[T any](
 		return result, err
 	}
 
-	app.Logger().Debug("HTTP Request", "url", u.String(), "body", string(respBytes))
+	app.Logger().Debug("HTTP response", "url", u.String(), "body", string(respBytes))
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return result, &httpError{Status: resp.Status, Body: string(respBytes)}

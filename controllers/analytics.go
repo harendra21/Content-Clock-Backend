@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase"
@@ -28,7 +27,6 @@ type Analytics struct {
 }
 
 func FetchPostsAnalytics(app *pocketbase.PocketBase) {
-	time.Sleep(5)
 	posts := []Post{}
 	err := app.DB().Select("id", "connection", "published_post_id").From("posts").Where(dbx.NewExp("status = {:status}", dbx.Params{"status": "published"})).All(&posts)
 	if err != nil {
