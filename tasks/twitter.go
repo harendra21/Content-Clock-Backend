@@ -31,6 +31,10 @@ type MediaUpload struct {
 }
 
 func HandleTwitterPostTask(app *pocketbase.PocketBase, p PostToSocialPayload) error {
+	if err := ensureGotwiCredentials(); err != nil {
+		FailedPost(app, "twitter", p.SocialPostId, err)
+		return err
+	}
 
 	content := p.Content
 	images := p.Images
@@ -83,6 +87,30 @@ func HandleTwitterPostTask(app *pocketbase.PocketBase, p PostToSocialPayload) er
 	SuccessPost(app, "twitter", socialPostId, tweetId)
 	return nil
 
+}
+
+func ensureGotwiCredentials() error {
+	apiKey := strings.TrimSpace(os.Getenv("GOTWI_API_KEY"))
+	if apiKey == "" {
+		apiKey = strings.TrimSpace(os.Getenv("TWITTER_KEY"))
+		if apiKey != "" {
+			_ = os.Setenv("GOTWI_API_KEY", apiKey)
+		}
+	}
+
+	apiSecret := strings.TrimSpace(os.Getenv("GOTWI_API_KEY_SECRET"))
+	if apiSecret == "" {
+		apiSecret = strings.TrimSpace(os.Getenv("TWITTER_SECRET"))
+		if apiSecret != "" {
+			_ = os.Setenv("GOTWI_API_KEY_SECRET", apiSecret)
+		}
+	}
+
+	if apiKey == "" || apiSecret == "" {
+		return fmt.Errorf("missing twitter app credentials: set TWITTER_KEY/TWITTER_SECRET (or GOTWI_API_KEY/GOTWI_API_KEY_SECRET)")
+	}
+
+	return nil
 }
 
 func uploadTwitterMedia(path string, oauthToken string, oauthTokenSecret string) (string, error) {

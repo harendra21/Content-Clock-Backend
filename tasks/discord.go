@@ -3,15 +3,16 @@ package tasks
 import (
 	"bytes"
 	"content-clock/helpers"
-	"content-clock/models"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/pocketbase/pocketbase"
 )
 
 // HandleDiscordPostTask handles the actual posting to Discord using OAuth
-func HandleDiscordPostTask(p PostToSocialPayload) error {
+func HandleDiscordPostTask(app *pocketbase.PocketBase, p PostToSocialPayload) error {
 
 	content := p.Content
 	images := p.Images
@@ -41,7 +42,7 @@ func HandleDiscordPostTask(p PostToSocialPayload) error {
 
 	if verifyResp.StatusCode != http.StatusOK {
 		helpers.Logging("error", fmt.Sprintf("Bot token verification failed: %s", string(verifyBody)))
-		models.DB.Model(&models.SocialPosts{}).Where("id = ?", socialPostId).Update("status", "failed").Update("logs", "Bot token verification failed")
+		FailedPost(app, "discord", socialPostId, fmt.Errorf("bot token verification failed: %s", string(verifyBody)))
 		return fmt.Errorf("bot token verification failed")
 	}
 
@@ -62,7 +63,7 @@ func HandleDiscordPostTask(p PostToSocialPayload) error {
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		helpers.Logging("error", fmt.Sprintf("Failed to marshal Discord payload: %v", err))
-		models.DB.Model(&models.SocialPosts{}).Where("id = ?", socialPostId).Update("status", "failed").Update("logs", err.Error())
+		FailedPost(app, "discord", socialPostId, err)
 		return err
 	}
 
@@ -70,7 +71,7 @@ func HandleDiscordPostTask(p PostToSocialPayload) error {
 	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		helpers.Logging("error", fmt.Sprintf("Failed to create Discord API request: %v", err))
-		models.DB.Model(&models.SocialPosts{}).Where("id = ?", socialPostId).Update("status", "failed").Update("logs", err.Error())
+		FailedPost(app, "discord", socialPostId, err)
 		return err
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", oauthToken))
@@ -84,7 +85,7 @@ func HandleDiscordPostTask(p PostToSocialPayload) error {
 	response, err := client.Do(req)
 	if err != nil {
 		helpers.Logging("error", fmt.Sprintf("HTTP POST to Discord API failed: %v", err))
-		models.DB.Model(&models.SocialPosts{}).Where("id = ?", socialPostId).Update("status", "failed").Update("logs", err.Error())
+		FailedPost(app, "discord", socialPostId, err)
 		return err
 	}
 	defer response.Body.Close()
@@ -92,7 +93,7 @@ func HandleDiscordPostTask(p PostToSocialPayload) error {
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		helpers.Logging("error", fmt.Sprintf("Failed to read Discord API response body: %v", err))
-		models.DB.Model(&models.SocialPosts{}).Where("id = ?", socialPostId).Update("status", "failed").Update("logs", err.Error())
+		FailedPost(app, "discord", socialPostId, err)
 		return err
 	}
 	helpers.Logging("info", fmt.Sprintf("Discord API response: %s", string(body)))
@@ -106,10 +107,10 @@ func HandleDiscordPostTask(p PostToSocialPayload) error {
 		if id, ok := respData["id"].(string); ok {
 			msgID = id
 		}
-		models.DB.Model(&models.SocialPosts{}).Where("id = ?", socialPostId).Update("status", "published").Update("published_post_id", msgID)
+		SuccessPost(app, "discord", socialPostId, msgID)
 	} else {
 		helpers.Logging("error", fmt.Sprintf("Discord API error: %s", string(body)))
-		models.DB.Model(&models.SocialPosts{}).Where("id = ?", socialPostId).Update("status", "failed").Update("logs", string(body))
+		FailedPost(app, "discord", socialPostId, fmt.Errorf("discord api error: %s", string(body)))
 	}
 
 	return nil

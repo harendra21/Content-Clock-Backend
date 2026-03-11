@@ -1,71 +1,125 @@
 # Content Clock Backend
 
-This is the backend for Content Clock, a social media content scheduling and publishing tool.
+Backend service for Content Clock.  
+Built on Go + PocketBase with custom REST routes for social OAuth, scheduled publishing, and analytics.
 
-## Installation
+## Stack
 
-1.  **Clone the repository:**
+- Go
+- PocketBase
+- Goth/OAuth integrations
+- Cron jobs (inside PocketBase app lifecycle)
 
-    ```bash
-    git clone https://github.com/your-username/content-clock-backend.git
-    cd content-clock-backend
-    ```
+## Prerequisites
 
-2.  **Install dependencies:**
+- Go `1.24+`
+- A `.env` file in project root
 
-    ```bash
-    go get .
-    ```
+## Setup
 
-3.  **Set up environment variables:**
+```bash
+go mod download
+```
 
-    Create a `.env` file in the root of the project and add the following variables. You will need to obtain the API keys and secrets from the respective social media platforms.
+## Environment Variables
 
-    ```
-    # General
-    API_HOST="http://localhost:8080"
-    REDIRECT_HOST="http://localhost:3000"
-    JWT_KEY="your-jwt-key"
+Create `.env` in this directory.
 
-    # Social Media
-    FACEBOOK_APP_ID="your-facebook-app-id"
-    FACEBOOK_SECRET="your-facebook-secret"
-    TWITTER_KEY="your-twitter-key"
-    TWITTER_SECRET="your-twitter-secret"
-    LINKEDIN_APP_ID="your-linkedin-app-id"
-    LINKEDIN_SECRET="your-linkedin-secret"
-    PINTEREST_APP_ID="your-pinterest-app-id"
-    PINTEREST_SECRET="your-pinterest-secret"
-    MASTODON_CLIENT_KEY="your-mastodon-client-key"
-    MASTODON_CLIENT_SECRET="your-mastodon-client-secret"
-    MASTODON_BASE_URL="social.mastodon.social"
+```env
+# General
+API_HOST="http://localhost:8080"
+REDIRECT_HOST="http://localhost:4200"
+JWT_KEY="change-me"
 
-    # AI
-    CHAT_GPT_KEY="your-chat-gpt-key"
-    ```
+# Facebook + Instagram
+FACEBOOK_APP_ID=""
+FACEBOOK_SECRET=""
 
-4.  **Run the application:**
+# Twitter/X
+TWITTER_KEY=""
+TWITTER_SECRET=""
+# Optional explicit gotwi keys (if omitted, backend uses TWITTER_KEY/TWITTER_SECRET)
+GOTWI_API_KEY=""
+GOTWI_API_KEY_SECRET=""
 
-    ```bash
-    go run . serve --http="localhost:8080"
-    ```
+# LinkedIn
+LINKEDIN_APP_ID=""
+LINKEDIN_SECRET=""
 
-    The application will be available at `http://localhost:8080`.
+# Pinterest
+PINTEREST_APP_ID=""
+PINTEREST_SECRET=""
+
+# Mastodon
+MASTODON_CLIENT_KEY=""
+MASTODON_CLIENT_SECRET=""
+MASTODON_BASE_URL="https://mastodon.social"
+
+# Reddit
+REDDIT_CLIENT_ID=""
+REDDIT_SECRET=""
+
+# Threads
+THREADS_APP_ID=""
+THREADS_SECRET_KEY=""
+
+# AI (used by /api/v1/post-with-ai; key currently sent to OpenRouter)
+CHAT_GPT_KEY=""
+OPENROUTER_APP_NAME="Content Clock"
+OPENROUTER_SITE_URL="http://localhost:4200"
+```
+
+Optional DB flag used in code:
+
+```env
+DB_MIGRATE="false"
+
+# Set true once when you want backend to create/update required PocketBase collections.
+# Keep false for normal runtime after schema is in place.
+```
+
+## Run Locally
+
+```bash
+go run . serve --http=0.0.0.0:8080
+```
+
+After first run:
+
+- API base: `http://localhost:8080/api/`
+- Admin UI: `http://localhost:8080/_/`
+- Create initial PocketBase superuser from the Admin UI install link.
+
+## Runtime Behavior
+
+- Custom routes are mounted under `/api/v1/*` (OAuth start/callback, add connections, AI helper).
+- Scheduled publisher cron runs every minute.
+- Analytics fetch cron runs every 3 hours.
+- Root `/` redirects to frontend.
 
 ## Docker
 
-You can also run the application using Docker.
+Build and run:
 
-1.  **Build the image:**
+```bash
+docker build -t content-clock-backend .
+docker run -p 8080:8080 --env-file .env content-clock-backend
+```
 
-    ```bash
-    docker build -t content-clock-backend .
-    ```
+Or with compose:
 
-2.  **Run the container:**
+```bash
+docker compose up --build
+```
 
-    ```bash
-    docker run -p 8080:8080 --env-file .env content-clock-backend
-    ```
+Note:
 
-## Build with jenkins
+- `docker-compose.yml` maps `./pbData:/pb/pb_data` for PocketBase data persistence.
+
+## Frontend Pairing
+
+Frontend should point to this backend URL in its environment config:
+
+- `v1Api`: `http://localhost:8080/api/v1`
+- `apiHost`: `http://localhost:8080/api`
+- `pocketbaseUrl`: `http://localhost:8080`

@@ -23,7 +23,7 @@ type PostToSocialPayload struct {
 	SocialPostId string
 }
 
-func FacebookPagePost(app *pocketbase.PocketBase, postContent string, images []string, connectionId string, accessToken string, socialPostId string, link string) {
+func FacebookPagePost(app *pocketbase.PocketBase, postContent string, images []string, connectionId string, accessToken string, socialPostId string, link string) error {
 
 	data := PostToSocialPayload{
 		Content:      postContent,
@@ -35,11 +35,10 @@ func FacebookPagePost(app *pocketbase.PocketBase, postContent string, images []s
 	}
 
 	// StartQueue("facebook", data)
-	HandleFacebookPagePostTask(app, data)
-
+	return HandleFacebookPagePostTask(app, data)
 }
 
-func LinkedinPost(app *pocketbase.PocketBase, postContent string, images []string, connectionId string, accessToken string, socialPostId string) {
+func LinkedinPost(app *pocketbase.PocketBase, postContent string, images []string, connectionId string, accessToken string, socialPostId string) error {
 
 	data := PostToSocialPayload{
 		Content:      postContent,
@@ -50,11 +49,10 @@ func LinkedinPost(app *pocketbase.PocketBase, postContent string, images []strin
 	}
 
 	// StartQueue("linkedin", data)
-	HandleLinkedinProfilePostTask(app, data)
-
+	return HandleLinkedinProfilePostTask(app, data)
 }
 
-func PostToTwitterProfile(app *pocketbase.PocketBase, postContent string, images []string, connectionId string, accessToken string, socialPostId string) {
+func PostToTwitterProfile(app *pocketbase.PocketBase, postContent string, images []string, connectionId string, accessToken string, socialPostId string) error {
 
 	data := PostToSocialPayload{
 		Content:      postContent,
@@ -65,10 +63,9 @@ func PostToTwitterProfile(app *pocketbase.PocketBase, postContent string, images
 	}
 
 	// StartQueue("twitter", data)
-	HandleTwitterPostTask(app, data)
-
+	return HandleTwitterPostTask(app, data)
 }
-func InstagramPost(app *pocketbase.PocketBase, postContent string, images []string, connectionId string, accessToken string, socialPostId string) {
+func InstagramPost(app *pocketbase.PocketBase, postContent string, images []string, connectionId string, accessToken string, socialPostId string) error {
 
 	data := PostToSocialPayload{
 		Content:      postContent,
@@ -79,10 +76,10 @@ func InstagramPost(app *pocketbase.PocketBase, postContent string, images []stri
 	}
 
 	// StartQueue("instagram", data)
-	HandleInstagramPostTask(app, data)
+	return HandleInstagramPostTask(app, data)
 }
 
-func PostToPinterestBoard(app *pocketbase.PocketBase, title, postContent string, images []string, connectionId string, accessToken string, socialPostId string) {
+func PostToPinterestBoard(app *pocketbase.PocketBase, title, postContent string, images []string, connectionId string, accessToken string, socialPostId string) error {
 
 	data := PostToSocialPayload{
 		Title:        title,
@@ -94,11 +91,10 @@ func PostToPinterestBoard(app *pocketbase.PocketBase, title, postContent string,
 	}
 
 	// StartQueue("pinterest", data)
-	HandlePinterestBoardPostTask(app, data)
-
+	return HandlePinterestBoardPostTask(app, data)
 }
 
-func PostToDiscordChannel(postContent string, images []string, connectionId string, accessToken string, socialPostId string) {
+func PostToDiscordChannel(app *pocketbase.PocketBase, postContent string, images []string, connectionId string, accessToken string, socialPostId string) error {
 
 	data := PostToSocialPayload{
 		Content:      postContent,
@@ -109,11 +105,11 @@ func PostToDiscordChannel(postContent string, images []string, connectionId stri
 	}
 
 	// StartQueue("discord", data)
-	HandleDiscordPostTask(data)
+	return HandleDiscordPostTask(app, data)
 
 }
 
-func PostToMastodon(app *pocketbase.PocketBase, postContent string, images []string, connectionId string, accessToken string, socialPostId string) {
+func PostToMastodon(app *pocketbase.PocketBase, postContent string, images []string, connectionId string, accessToken string, socialPostId string) error {
 
 	data := PostToSocialPayload{
 		Content:      postContent,
@@ -126,11 +122,11 @@ func PostToMastodon(app *pocketbase.PocketBase, postContent string, images []str
 	app.Logger().Info("Postinh to mastodon", "data", data)
 
 	// StartQueue("discord", data)
-	HandlePostToMastodon(app, data)
+	return HandlePostToMastodon(app, data)
 
 }
 
-func PostToThreads(app *pocketbase.PocketBase, postContent string, images []string, connectionId string, accessToken string, socialPostId string) {
+func PostToThreads(app *pocketbase.PocketBase, postContent string, images []string, connectionId string, accessToken string, socialPostId string) error {
 
 	data := PostToSocialPayload{
 		Content:      postContent,
@@ -143,10 +139,10 @@ func PostToThreads(app *pocketbase.PocketBase, postContent string, images []stri
 	app.Logger().Info("Postinh to threads", "data", data)
 
 	// StartQueue("discord", data)
-	HandlePostToThreads(app, data)
+	return HandlePostToThreads(app, data)
 
 }
-func PostToReddit(app *pocketbase.PocketBase, postContent string, images []string, connectionId string, accessToken string, socialPostId string) {
+func PostToReddit(app *pocketbase.PocketBase, postContent string, images []string, connectionId string, accessToken string, socialPostId string) error {
 
 	data := PostToSocialPayload{
 		Content:      postContent,
@@ -159,22 +155,45 @@ func PostToReddit(app *pocketbase.PocketBase, postContent string, images []strin
 	app.Logger().Info("Postinh to reddit", "data", data)
 
 	// StartQueue("discord", data)
-	HandlePostToReddit(app, data)
+	return HandlePostToReddit(app, data)
 
 }
 
 func FailedPost(app *pocketbase.PocketBase, platform string, postId string, err error) {
-	record, _ := app.FindRecordById("posts", postId)
+	record, findErr := app.FindRecordById("posts", postId)
+	if findErr != nil {
+		app.Logger().Error("Failed to load post for failed status update", "postId", postId, "error", findErr.Error())
+		return
+	}
+	previousStatus := record.GetString("status")
 	record.Set("status", "failed")
 	record.Set("logs", err.Error())
-	app.Save(record)
+	if saveErr := app.Save(record); saveErr != nil {
+		app.Logger().Error("Failed to update post status to failed", "postId", postId, "error", saveErr.Error())
+		return
+	}
+	if previousStatus != "failed" {
+		createPostNotification(app, record, "post_failed", platform, err.Error())
+	}
 	app.Logger().Error("Failed to post on "+platform, "type", "posting", "platform", platform, "postId", postId, "error", err.Error())
 }
 
 func SuccessPost(app *pocketbase.PocketBase, platform string, postId string, publishedPostId string) {
-	record, _ := app.FindRecordById("posts", postId)
+	record, findErr := app.FindRecordById("posts", postId)
+	if findErr != nil {
+		app.Logger().Error("Failed to load post for published status update", "postId", postId, "error", findErr.Error())
+		return
+	}
+	previousStatus := record.GetString("status")
 	record.Set("status", "published")
 	record.Set("published_post_id", publishedPostId)
-	app.Save(record)
+	record.Set("logs", "")
+	if saveErr := app.Save(record); saveErr != nil {
+		app.Logger().Error("Failed to update post status to published", "postId", postId, "error", saveErr.Error())
+		return
+	}
+	if previousStatus != "published" {
+		createPostNotification(app, record, "post_published", platform, "")
+	}
 	app.Logger().Info("Successfully posted on "+platform, "type", "posting", "platform", platform, "postId", postId, "publishedPostId", publishedPostId)
 }

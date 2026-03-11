@@ -50,7 +50,12 @@ func ConnectDatabase(dsn_url, env string) {
 	}
 	db_migrate := os.Getenv("DB_MIGRATE")
 	if db_migrate == "true" {
-		err := database.AutoMigrate(&Connections{}, &SocialPosts{})
+		err := database.AutoMigrate(
+			&Connections{},
+			&SocialPosts{},
+			&Notifications{},
+			&Analytics{},
+		)
 		if err != nil {
 			helpers.Logging("error", err.Error())
 			return

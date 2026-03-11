@@ -3,6 +3,8 @@ package models
 import (
 	"time"
 
+	"github.com/pocketbase/pocketbase/core"
+	"github.com/pocketbase/pocketbase/tools/types"
 	"gorm.io/gorm"
 )
 
@@ -22,4 +24,28 @@ type Connections struct {
 	CreatedAt      time.Time `gorm:"autoCreateTime"`
 	UpdatedAt      time.Time `gorm:"autoCreateTime;autoUpdateTime"`
 	DeletedAt      *time.Time
+}
+
+func ApplyConnectionsCollectionSchema(c *core.Collection) {
+	c.Fields.Add(
+		&core.TextField{Name: "name"},
+		&core.TextField{Name: "username"},
+		&core.TextField{Name: "connection_name"},
+		&core.TextField{Name: "connection_id"},
+		&core.TextField{Name: "access_token"},
+		&core.TextField{Name: "refresh_token"},
+		&core.JSONField{Name: "meta_data"},
+		&core.TextField{Name: "timezone"},
+		&core.TextField{Name: "user"},
+		&core.TextField{Name: "profile_image_url"},
+		&core.FileField{Name: "profile_image", MaxSelect: 1},
+		&core.DateField{Name: "deleted"},
+	)
+
+	ownRule := `@request.auth.id != "" && user = @request.auth.id`
+	c.ListRule = types.Pointer(ownRule)
+	c.ViewRule = types.Pointer(ownRule)
+	c.CreateRule = types.Pointer(ownRule)
+	c.UpdateRule = types.Pointer(ownRule)
+	c.DeleteRule = types.Pointer(ownRule)
 }

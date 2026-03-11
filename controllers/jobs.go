@@ -3,9 +3,8 @@ package controllers
 import (
 	"content-clock/tasks"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"regexp"
-	"strings"
 	"time"
 
 	"github.com/pocketbase/pocketbase"
@@ -29,6 +28,12 @@ type Connections struct {
 
 func GetScheduledPosts(app *pocketbase.PocketBase) {
 	time.Sleep(5 * time.Second) // wait for 5 seconds before executing the task
+
+	if err := EnsureTables(app, "posts", "connections"); err != nil {
+		app.Logger().Warn("Skipping scheduled post worker", "error", err.Error())
+		return
+	}
+
 	var posts []ScheduledPost
 	selectPostsQuery := `SELECT * FROM posts
 			WHERE status = 'scheduled'
@@ -64,7 +69,7 @@ func GetScheduledPosts(app *pocketbase.PocketBase) {
 			var images []string
 			err = json.Unmarshal([]byte(post.Images), &images)
 			if err != nil {
-				app.Logger().Error("Failed to parse images.", "postId", postId, "error", err.Error())
+				markPostFailed(app, postId, "scheduler: failed to parse images payload", err)
 				continue
 			}
 
@@ -75,17 +80,15 @@ func GetScheduledPosts(app *pocketbase.PocketBase) {
 			selectConnectionsQuery := `SELECT connection_id, connection_name, access_token FROM connections WHERE id = '` + connectionId + `' AND deleted = "" ORDER BY id DESC;`
 
 			// get social media connection details (access_token)
-
-			// err = models.DB.Raw(selectConnectionsQuery).Scan(&connections).Error
 			err = app.DB().NewQuery(selectConnectionsQuery).All(&connections)
 
 			if err != nil {
-				app.Logger().Error("Failed to fetch connections: ", "query", selectConnectionsQuery, "error", err.Error())
+				markPostFailed(app, postId, "scheduler: failed to fetch connection details", err)
 				continue
 			}
 
 			if len(connections) == 0 {
-				app.Logger().Error("No connections found", "ConnectionId", connectionId, "postId", postId)
+				markPostFailed(app, postId, "scheduler: no active connection found for post", errors.New("connection not found or deleted"))
 				continue
 			}
 
@@ -96,34 +99,41 @@ func GetScheduledPosts(app *pocketbase.PocketBase) {
 
 				app.Logger().Info("Posting to social media"+connectionName, "connectionName", connectionName, "postId", postId, "content", content, "images", images)
 
+				var postErr error
 				switch connectionName {
 				case "facebook":
 					// schedule facebook posts
-					tasks.FacebookPagePost(app, content, images, connectionId, accessToken, postId, link)
+					postErr = tasks.FacebookPagePost(app, content, images, connectionId, accessToken, postId, link)
 				case "instagram":
 					// Post On Instagram
-					tasks.InstagramPost(app, content, images, connectionId, accessToken, postId)
+					postErr = tasks.InstagramPost(app, content, images, connectionId, accessToken, postId)
 				case "twitter":
 					// Post on twitter
-					tasks.PostToTwitterProfile(app, content, images, connectionId, accessToken, postId)
+					postErr = tasks.PostToTwitterProfile(app, content, images, connectionId, accessToken, postId)
 				case "linkedin":
 					// Post on linkedin
-					tasks.LinkedinPost(app, content, images, connectionId, accessToken, postId)
+					postErr = tasks.LinkedinPost(app, content, images, connectionId, accessToken, postId)
 				case "pinterest":
 					// Post on linkedin
-					tasks.PostToPinterestBoard(app, title, content, images, connectionId, accessToken, postId)
+					postErr = tasks.PostToPinterestBoard(app, title, content, images, connectionId, accessToken, postId)
 				case "discord":
 					// Post on linkedin
-					tasks.PostToDiscordChannel(content, images, connectionId, accessToken, postId)
+					postErr = tasks.PostToDiscordChannel(app, content, images, connectionId, accessToken, postId)
 				case "mastodon":
 					// Post to mastadon
-					tasks.PostToMastodon(app, content, images, connectionId, accessToken, postId)
+					postErr = tasks.PostToMastodon(app, content, images, connectionId, accessToken, postId)
 				case "threads":
 					// Post to mastadon
-					tasks.PostToThreads(app, content, images, connectionId, accessToken, postId)
+					postErr = tasks.PostToThreads(app, content, images, connectionId, accessToken, postId)
 				case "reddit":
 					// Post to mastadon
-					tasks.PostToReddit(app, content, images, connectionId, accessToken, postId)
+					postErr = tasks.PostToReddit(app, content, images, connectionId, accessToken, postId)
+				default:
+					postErr = fmt.Errorf("unsupported connection type: %s", connectionName)
+				}
+
+				if postErr != nil {
+					markPostFailed(app, postId, "scheduler: failed to dispatch post to platform "+connectionName, postErr)
 				}
 
 			}
@@ -132,19 +142,8 @@ func GetScheduledPosts(app *pocketbase.PocketBase) {
 	}
 }
 
-func parsePostgresStringArray(input string) ([]string, error) {
-	input = strings.Trim(input, "{}")
-	rawItems := strings.Split(input, ",")
-	re := regexp.MustCompile(`^\\?"?(.+?)"?\\?$`)
-	var results []string
-	for _, item := range rawItems {
-		item = strings.TrimSpace(item)
-		matches := re.FindStringSubmatch(item)
-		if len(matches) == 2 {
-			results = append(results, matches[1])
-		} else {
-			return nil, fmt.Errorf("could not parse item: %s", item)
-		}
-	}
-	return results, nil
+func markPostFailed(app *pocketbase.PocketBase, postId string, context string, err error) {
+	logMessage := fmt.Sprintf("%s: %s", context, err.Error())
+	tasks.FailedPost(app, "scheduler", postId, errors.New(logMessage))
+	app.Logger().Error("Scheduled post failed", "postId", postId, "context", context, "error", err.Error())
 }

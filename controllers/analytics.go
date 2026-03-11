@@ -27,6 +27,11 @@ type Analytics struct {
 }
 
 func FetchPostsAnalytics(app *pocketbase.PocketBase) {
+	if err := EnsureTables(app, "posts", "connections", "analytics"); err != nil {
+		app.Logger().Warn("Skipping analytics worker", "error", err.Error())
+		return
+	}
+
 	posts := []Post{}
 	err := app.DB().Select("id", "connection", "published_post_id").From("posts").Where(dbx.NewExp("status = {:status}", dbx.Params{"status": "published"})).All(&posts)
 	if err != nil {
