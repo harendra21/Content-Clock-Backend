@@ -1,0 +1,40 @@
+name: Fly DB Migrate (Manual)
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: fly-migrate-backend
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Enable DB_MIGRATE
+        run: flyctl secrets set DB_MIGRATE=true
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Deploy with migration
+        run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Disable DB_MIGRATE
+        if: always()
+        run: flyctl secrets set DB_MIGRATE=false
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Final deploy without migration
+        if: always()
+        run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

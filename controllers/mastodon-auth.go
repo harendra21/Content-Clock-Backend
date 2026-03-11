@@ -40,7 +40,7 @@ func BeginMastodonAuth(e *core.RequestEvent) {
 		return
 	}
 	// var mdBaseUrl string = os.Getenv("MASTODON_BASE_URL")
-	goth.UseProviders(mastodon.New(mdApiKey, mdSecret, apiHost+"/api/v1/auth/mastodon/callback", "read write follow"))
+	goth.UseProviders(mastodon.New(mdApiKey, mdSecret, apiHost+"/api/v1/auth/mastodon/callback", MastodonOAuthScopes()))
 	q := e.Request.URL.Query()
 	q.Add("provider", "mastodon")
 	e.Request.URL.RawQuery = q.Encode()

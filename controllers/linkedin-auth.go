@@ -37,12 +37,13 @@ func BeginLinkedinAuth(e *core.RequestEvent) {
 		helpers.Error(e, "LinkedIn App ID or Secret is not set")
 		return
 	}
+	scopes := LinkedinOAuthScopes()
 
 	linkedinOauthConfig := &oauth2.Config{
 		ClientID:     linkedinAppId,
 		ClientSecret: linkedinSecret,
 		RedirectURL:  os.Getenv("API_HOST") + "/api/v1/auth/linkedin/callback",
-		Scopes:       []string{"w_member_social", "profile", "openid", "email"},
+		Scopes:       scopes,
 		Endpoint:     linkedin.Endpoint,
 	}
 
@@ -51,11 +52,12 @@ func BeginLinkedinAuth(e *core.RequestEvent) {
 }
 
 func LinkedinOAuthCallback(e *core.RequestEvent, app *pocketbase.PocketBase) {
+	scopes := LinkedinOAuthScopes()
 	linkedinOauthConfig := &oauth2.Config{
 		ClientID:     os.Getenv("LINKEDIN_APP_ID"),
 		ClientSecret: os.Getenv("LINKEDIN_SECRET"),
 		RedirectURL:  os.Getenv("API_HOST") + "/api/v1/auth/linkedin/callback",
-		Scopes:       []string{"w_member_social", "profile", "openid", "email"},
+		Scopes:       scopes,
 		Endpoint:     linkedin.Endpoint,
 	}
 

@@ -23,6 +23,7 @@ func HandlePostToThreads(app *pocketbase.PocketBase, p PostToSocialPayload) erro
 	socialPostId := p.SocialPostId
 	backendHost := os.Getenv("API_HOST")
 	// backendHost = "https://content-clock.loca.lt"
+	hasVideo := containsVideoFile(images)
 
 	app.Logger().Info("Posting to threads", "connectionId", connectionId, "content", content, "images", images)
 
@@ -50,6 +51,35 @@ func HandlePostToThreads(app *pocketbase.PocketBase, p PostToSocialPayload) erro
 		}
 		SuccessPost(app, "threads", socialPostId, resp.ID)
 	} else if len(images) == 1 {
+		if hasVideo {
+			videoURL := fmt.Sprintf("%s/api/files/posts/%s/%s", backendHost, socialPostId, images[0])
+
+			params := url.Values{}
+			params.Add("media_type", "VIDEO")
+			params.Add("text", content)
+			params.Add("video_url", videoURL)
+			params.Add("access_token", accessToken)
+
+			reqUrl := fmt.Sprintf("%s/%s/threads", threadsUrl, connectionId)
+			resp, err := helpers.MakeHTTPRequest[ThreadsResponse](app, "POST", reqUrl, nil, params, nil)
+			if err != nil {
+				FailedPost(app, "threads", socialPostId, err)
+				return err
+			}
+
+			publishParams := url.Values{}
+			publishParams.Add("creation_id", resp.ID)
+			publishParams.Add("access_token", accessToken)
+			reqUrl = fmt.Sprintf("%s/%s/threads_publish", threadsUrl, connectionId)
+			resp, err = helpers.MakeHTTPRequest[ThreadsResponse](app, "POST", reqUrl, nil, publishParams, nil)
+			if err != nil {
+				FailedPost(app, "threads", socialPostId, err)
+				return err
+			}
+			SuccessPost(app, "threads", socialPostId, resp.ID)
+			return nil
+		}
+
 		imageUrl := fmt.Sprintf("%s/api/files/posts/%s/%s", backendHost, socialPostId, images[0])
 
 		params := url.Values{}
@@ -77,6 +107,11 @@ func HandlePostToThreads(app *pocketbase.PocketBase, p PostToSocialPayload) erro
 		}
 		SuccessPost(app, "threads", socialPostId, resp.ID)
 	} else if len(images) > 1 {
+		if hasVideo {
+			err := fmt.Errorf("threads supports only a single video post")
+			FailedPost(app, "threads", socialPostId, err)
+			return err
+		}
 		var children string
 		for _, image := range images {
 			imageUrl := fmt.Sprintf("%s/api/files/posts/%s/%s", backendHost, socialPostId, image)

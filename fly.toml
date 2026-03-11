@@ -1,0 +1,21 @@
+app = "content-clock-backend"
+primary_region = "bom"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8080"
+  DB_MIGRATE = "false"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_start_machines = true
+  auto_stop_machines = false
+  min_machines_running = 1
+  processes = ["app"]
+
+[[mounts]]
+  source = "pb_data"
+  destination = "/pb/pb_data"

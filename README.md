@@ -123,3 +123,39 @@ Frontend should point to this backend URL in its environment config:
 - `v1Api`: `http://localhost:8080/api/v1`
 - `apiHost`: `http://localhost:8080/api`
 - `pocketbaseUrl`: `http://localhost:8080`
+
+## Deploy (Fly.io + GitHub Actions)
+
+This repo includes:
+
+- `fly.toml` for Fly app/runtime config
+- `.github/workflows/deploy-fly.yml` for auto deploy on push to `main`
+- `.github/workflows/migrate-fly.yml` for manual migration deploy
+
+### One-time setup
+
+```bash
+fly auth login
+fly launch --no-deploy
+fly volumes create pb_data --size 3 --region bom
+```
+
+### GitHub secret required
+
+Set repository secret:
+
+- `FLY_API_TOKEN` (from `fly tokens create deploy`)
+
+### Fly secrets required
+
+Set all app env secrets in Fly (`fly secrets set ...`), and at minimum:
+
+- `API_HOST` = your Fly URL (for example `https://content-clock-backend.fly.dev`)
+- `REDIRECT_HOST` = `https://content-clock.vercel.app`
+- `OPENROUTER_SITE_URL` = `https://content-clock.vercel.app`
+
+### OAuth callback base
+
+Use:
+
+`https://<your-fly-app>.fly.dev/api/v1/auth/<provider>/callback`

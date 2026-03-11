@@ -70,7 +70,7 @@ func BeginPinterestAuth(e *core.RequestEvent) {
 
 	state := os.Getenv("JWT_KEY")
 
-	scopes := "boards:read,pins:read,user_accounts:read,boards:write,pins:write"
+	scopes := strings.Join(PinterestOAuthScopes(), ",")
 
 	redirect_uri := apiHost + "/api/v1/auth/pinterest/callback"
 

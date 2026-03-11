@@ -38,17 +38,13 @@ func BeginInstagramAuth(e *core.RequestEvent) {
 		helpers.Error(e, "Facebook App ID or Secret is not set")
 		return
 	}
+	scopes := InstagramOAuthScopes()
 
 	goth.UseProviders(facebook.New(
 		fbAppId,
 		fbAppSecret,
 		apiHost+"/api/v1/auth/instagram/callback",
-		"instagram_basic",
-		"instagram_content_publish",
-		"instagram_manage_comments",
-		"instagram_manage_insights",
-		// "pages_show_list",       // Added missing scope for accessing Facebook pages
-		"pages_read_engagement", // Added for page insights
+		scopes...,
 	))
 
 	q := e.Request.URL.Query()
@@ -62,17 +58,13 @@ func InstagramOAuthCallback(e *core.RequestEvent, app *pocketbase.PocketBase) {
 	var apiHost string = os.Getenv("API_HOST")
 	var fbAppId string = os.Getenv("FACEBOOK_APP_ID")
 	var fbAppSecret string = os.Getenv("FACEBOOK_SECRET")
+	scopes := InstagramOAuthScopes()
 
 	goth.UseProviders(facebook.New(
 		fbAppId,
 		fbAppSecret,
 		apiHost+"/api/v1/auth/instagram/callback",
-		"instagram_basic",
-		"instagram_content_publish",
-		"instagram_manage_comments",
-		"instagram_manage_insights",
-		// "pages_show_list",
-		"pages_read_engagement",
+		scopes...,
 	))
 
 	q := e.Request.URL.Query()

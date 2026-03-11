@@ -3,8 +3,8 @@ package main
 import (
 	"content-clock/controllers"
 	"content-clock/helpers"
+	"content-clock/models"
 	"log"
-	"net/http"
 
 	"github.com/joho/godotenv"
 	"github.com/pocketbase/pocketbase"
@@ -19,14 +19,20 @@ func main() {
 	app = helpers.CreateApp()
 
 	godotenv.Load()
+	controllers.SetupPostHooks(app)
 
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
+		if err := models.MigrateCollectionsIfEnabled(app); err != nil {
+			app.Logger().Error("Failed to run DB migration", "error", err.Error())
+			return err
+		}
+
 		// serves static files from the provided public dir (if exists)
 		// se.Router.GET("/{path...}", apis.Static(os.DirFS("./pb_public"), false))
-		se.Router.GET("/", func(e *core.RequestEvent) error {
-			e.Redirect(http.StatusPermanentRedirect, "https://content-clock.vercel.app")
-			return nil
-		})
+		// se.Router.GET("/", func(e *core.RequestEvent) error {
+		// 	e.Redirect(http.StatusPermanentRedirect, "https://content-clock.vercel.app")
+		// 	return nil
+		// })
 		controllers.SetupInstagramRoutes(se, app)
 		controllers.SetupFacebookRoutes(se, app)
 		controllers.SetupLinkedinRoutes(se, app)

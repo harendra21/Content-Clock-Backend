@@ -38,7 +38,7 @@ func BeginThreadsAuth(e *core.RequestEvent, app *pocketbase.PocketBase) {
 	}
 
 	callbackUrl := apiHost + "/api/v1/auth/threads/callback"
-	scopes := "threads_basic,threads_content_publish,threads_manage_insights"
+	scopes := ThreadsOAuthScopes()
 
 	redirectUrl := fmt.Sprintf("https://threads.net/oauth/authorize?client_id=%s&redirect_uri=%s&response_type=code&scope=%s", threadsAppId, callbackUrl, scopes)
 	e.Redirect(http.StatusTemporaryRedirect, redirectUrl)

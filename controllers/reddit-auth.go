@@ -48,7 +48,7 @@ func SetupRedditRoutes(se *core.ServeEvent, app *pocketbase.PocketBase) {
 func BeginRedditAuth(e *core.RequestEvent) {
 	var clientID string = os.Getenv("REDDIT_CLIENT_ID")
 	var redirectURL string = os.Getenv("API_HOST") + "/api/v1/auth/reddit/callback"
-	var scopes string = "identity submit read"
+	var scopes string = RedditOAuthScopes()
 	//
 	state := os.Getenv("JWT_KEY")
 	url := fmt.Sprintf("https://www.reddit.com/api/v1/authorize?client_id=%s&response_type=code&state=%s&redirect_uri=%s&duration=permanent&scope=%s", clientID, state, redirectURL, scopes)

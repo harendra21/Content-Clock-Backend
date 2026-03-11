@@ -33,6 +33,23 @@ func HandleFacebookPagePostTask(app *pocketbase.PocketBase, p PostToSocialPayloa
 	backendHost := os.Getenv("API_HOST")
 	// backendHost := "https://content-clock.loca.lt"
 
+	if containsVideoFile(images) {
+		if len(images) != 1 {
+			err := errors.New("facebook supports only one video per post")
+			FailedPost(app, "facebook", socialPostId, err)
+			return err
+		}
+
+		videoURL := fmt.Sprintf("%s/api/files/posts/%s/%s", backendHost, socialPostId, images[0])
+		videoID, err := UploadVideo(accessToken, connectionId, videoURL, content)
+		if err != nil {
+			FailedPost(app, "facebook", socialPostId, err)
+			return err
+		}
+		SuccessPost(app, "facebook", socialPostId, videoID)
+		return nil
+	}
+
 	var mediaIds []string
 	if len(images) > 0 {
 		for _, image := range images {
@@ -167,5 +184,48 @@ func UploadImge(accessToken, connectionId, imagePath string) (string, error) {
 		return "", fmt.Errorf("upload failed: no id returned, raw body: %s", string(body))
 	}
 
+	return respData.ID, nil
+}
+
+func UploadVideo(accessToken, connectionId, videoPath, description string) (string, error) {
+	requestURL := fmt.Sprintf("https://graph.facebook.com/%s/videos", connectionId)
+	payload := strings.NewReader(fmt.Sprintf("file_url=%s&description=%s&published=true&access_token=%s", url.QueryEscape(videoPath), url.QueryEscape(description), accessToken))
+
+	req, err := http.NewRequest("POST", requestURL, payload)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return "", err
+	}
+
+	var errResp struct {
+		Error struct {
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if json.Unmarshal(body, &errResp) == nil && errResp.Error.Message != "" {
+		return "", errors.New(errResp.Error.Message)
+	}
+
+	var respData struct {
+		ID string `json:"id"`
+	}
+	if err := json.Unmarshal(body, &respData); err != nil {
+		return "", fmt.Errorf("failed to parse video response: %w", err)
+	}
+	if respData.ID == "" {
+		return "", fmt.Errorf("video upload failed: no id returned, raw body: %s", string(body))
+	}
 	return respData.ID, nil
 }

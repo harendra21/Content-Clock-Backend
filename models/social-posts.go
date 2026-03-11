@@ -32,7 +32,7 @@ func ApplyPostsCollectionSchema(c *core.Collection) {
 		&core.TextField{Name: "title"},
 		&core.TextField{Name: "content"},
 		&core.TextField{Name: "link"},
-		&core.FileField{Name: "images", MaxSelect: 10},
+		&core.FileField{Name: "images", MaxSelect: 10, MaxSize: 50 * 1024 * 1024},
 		&core.TextField{Name: "status"},
 		&core.TextField{Name: "type"},
 		&core.TextField{Name: "group_id"},

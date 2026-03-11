@@ -77,7 +77,8 @@ func BeginFacebookAuth(e *core.RequestEvent) {
 		helpers.Error(e, "Facebook App ID or Secret is not set")
 		return
 	}
-	goth.UseProviders(facebook.New(fbAppId, fbAppSecret, apiHost+"/api/v1/auth/facebook/callback", "pages_manage_posts", "pages_show_list", "read_insights", "pages_read_engagement", "publish_video"))
+	scopes := FacebookOAuthScopes()
+	goth.UseProviders(facebook.New(fbAppId, fbAppSecret, apiHost+"/api/v1/auth/facebook/callback", scopes...))
 	q := e.Request.URL.Query()
 	q.Add("provider", "facebook")
 	e.Request.URL.RawQuery = q.Encode()

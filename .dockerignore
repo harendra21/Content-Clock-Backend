@@ -1,0 +1,13 @@
+.git
+.gitignore
+.github
+.env
+.env.*
+pb_data
+pbData
+node_modules
+dist
+tmp
+*.log
+README.md
+Jenkinsfile

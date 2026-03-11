@@ -23,11 +23,67 @@ func HandleInstagramPostTask(app *pocketbase.PocketBase, p PostToSocialPayload) 
 
 	backendHost := os.Getenv("API_HOST")
 	imageCount := len(images)
+	hasVideo := containsVideoFile(images)
 
 	if imageCount == 0 {
 		err := errors.New("No images for Instagram")
 		FailedPost(app, "instagram", socialPostId, err)
 		return err
+	}
+
+	if hasVideo {
+		if imageCount != 1 {
+			err := errors.New("Instagram supports only one video per post")
+			FailedPost(app, "instagram", socialPostId, err)
+			return err
+		}
+
+		videoURL := fmt.Sprintf("%s/api/files/posts/%s/%s", backendHost, socialPostId, images[0])
+		postBody := map[string]string{
+			"media_type": "REELS",
+			"video_url":  videoURL,
+			"caption":    content,
+		}
+
+		url := fmt.Sprintf("https://graph.facebook.com/v19.0/%s/media?access_token=%s", connectionId, accessToken)
+		jsonData, err := json.Marshal(postBody)
+		if err != nil {
+			FailedPost(app, "instagram", socialPostId, err)
+			return err
+		}
+
+		res, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+		if err != nil {
+			FailedPost(app, "instagram", socialPostId, err)
+			return err
+		}
+		defer res.Body.Close()
+
+		body, _ := ioutil.ReadAll(res.Body)
+		var result map[string]interface{}
+		if err := json.Unmarshal(body, &result); err != nil {
+			FailedPost(app, "instagram", socialPostId, err)
+			return err
+		}
+
+		if result["id"] == nil {
+			errMsg := "Failed to create video post"
+			if e, ok := result["error"]; ok {
+				errMsg = e.(map[string]interface{})["message"].(string)
+			}
+			FailedPost(app, "instagram", socialPostId, errors.New(errMsg))
+			return errors.New(errMsg)
+		}
+
+		postID := result["id"].(string)
+		err = PublishMedia(connectionId, postID, accessToken)
+		if err != nil {
+			FailedPost(app, "instagram", socialPostId, err)
+			return err
+		}
+
+		SuccessPost(app, "instagram", socialPostId, postID)
+		return nil
 	}
 
 	if imageCount == 1 {
