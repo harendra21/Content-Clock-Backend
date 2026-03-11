@@ -124,13 +124,11 @@ Frontend should point to this backend URL in its environment config:
 - `apiHost`: `http://localhost:8080/api`
 - `pocketbaseUrl`: `http://localhost:8080`
 
-## Deploy (Fly.io + GitHub Actions)
+## Deploy (Fly.io)
 
 This repo includes:
 
 - `fly.toml` for Fly app/runtime config
-- `.github/workflows/deploy-fly.yml` for auto deploy on push to `main`
-- `.github/workflows/migrate-fly.yml` for manual migration deploy
 
 ### One-time setup
 
@@ -140,11 +138,7 @@ fly launch --no-deploy
 fly volumes create pb_data --size 3 --region bom
 ```
 
-### GitHub secret required
-
-Set repository secret:
-
-- `FLY_API_TOKEN` (from `fly tokens create deploy`)
+Enable Fly GitHub integration (Auto Deploy) from Fly dashboard for this app/repo.
 
 ### Fly secrets required
 
